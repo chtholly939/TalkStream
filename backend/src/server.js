@@ -26,7 +26,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://talk-stream-video-chat-app.vercel.app",
+      "https://talk-stream-eight.vercel.app/",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
