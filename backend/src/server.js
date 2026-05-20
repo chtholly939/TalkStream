@@ -19,15 +19,12 @@ const PORT = process.env.PORT;
 
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://talkstream-video-chat-app.onrender.com",
+  "https://talk-stream-eight.vercel.app",
 ];
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://talk-stream-eight.vercel.app/",
-    ],
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
