@@ -1,15 +1,19 @@
 import { createElement, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, MessageSquare, Users, Phone, Settings, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Home, MessageSquare, Users, Phone, Settings, LogOut,
+  ChevronLeft, ChevronRight, UsersRound,
+} from "lucide-react";
 import useAuthUser from "../hooks/useAuthUser";
 import useLogout from "../hooks/useLogout";
 import ThemeSelector from "./ThemeSelector";
 
 const NAV_ITEMS = [
-  { icon: Home,         label: "Home",          path: "/home" },
-  { icon: MessageSquare,label: "Chats",         path: "/chats" },
-  { icon: Users,        label: "Friends",       path: "/friends" },
-  { icon: Phone,        label: "Calls",         path: "/calls" },
+  { icon: Home,          label: "Home",    path: "/home"    },
+  { icon: MessageSquare, label: "Chats",   path: "/chats"   },
+  { icon: UsersRound,    label: "Groups",  path: "/groups"  },
+  { icon: Users,         label: "Friends", path: "/friends" },
+  { icon: Phone,         label: "Calls",   path: "/calls"   },
 ];
 
 export default function Sidebar({ children }) {
@@ -21,7 +25,9 @@ export default function Sidebar({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const isActive = (path) =>
-    path === "/home" ? location.pathname === "/home" : location.pathname.startsWith(path);
+    path === "/home"
+      ? location.pathname === "/home"
+      : location.pathname.startsWith(path);
 
   const handleLogout = () => {
     setMobileOpen(false);
@@ -31,12 +37,17 @@ export default function Sidebar({ children }) {
   };
 
   const SidebarContent = () => (
-    <div className="flex h-full flex-col" style={{ background: "oklch(var(--b2))", borderRight: "1px solid var(--border)" }}>
+    <div
+      className="flex h-full flex-col"
+      style={{ background: "oklch(var(--b2))", borderRight: "1px solid var(--border)" }}
+    >
       {/* Logo */}
       <Link
         to="/home"
         onClick={() => setMobileOpen(false)}
-        className={`flex items-center gap-3 px-4 py-5 transition-opacity hover:opacity-80 ${collapsed ? "justify-center" : ""}`}
+        className={`flex items-center gap-3 px-4 py-5 transition-opacity hover:opacity-80 ${
+          collapsed ? "justify-center" : ""
+        }`}
         title={collapsed ? "TalkStream" : ""}
       >
         <img
@@ -60,7 +71,9 @@ export default function Sidebar({ children }) {
             key={path}
             to={path}
             onClick={() => setMobileOpen(false)}
-            className={`sidebar-item ${isActive(path) ? "active" : ""} ${collapsed ? "justify-center" : ""}`}
+            className={`sidebar-item ${isActive(path) ? "active" : ""} ${
+              collapsed ? "justify-center" : ""
+            }`}
             title={collapsed ? label : ""}
           >
             {createElement(icon, { size: 18 })}
@@ -77,21 +90,34 @@ export default function Sidebar({ children }) {
         <Link
           to="/profile"
           onClick={() => setMobileOpen(false)}
-          className={`sidebar-item ${isActive("/profile") ? "active" : ""} ${collapsed ? "justify-center" : ""}`}
+          className={`sidebar-item ${isActive("/profile") ? "active" : ""} ${
+            collapsed ? "justify-center" : ""
+          }`}
           title={collapsed ? "Profile" : ""}
         >
           <div className="relative flex-shrink-0">
-            <div className="h-7 w-7 rounded-full overflow-hidden" style={{ background: "oklch(var(--b3))" }}>
-              {authUser?.profilePic
-                ? <img src={authUser.profilePic} alt="" className="h-full w-full object-cover" />
-                : <span className="flex h-full w-full items-center justify-center text-xs font-bold" style={{ color: "var(--text-secondary)" }}>{authUser?.fullName?.[0]?.toUpperCase()}</span>
-              }
+            <div
+              className="h-7 w-7 rounded-full overflow-hidden"
+              style={{ background: "oklch(var(--b3))" }}
+            >
+              {authUser?.profilePic ? (
+                <img src={authUser.profilePic} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <span
+                  className="flex h-full w-full items-center justify-center text-xs font-bold"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  {authUser?.fullName?.[0]?.toUpperCase()}
+                </span>
+              )}
             </div>
             <span className="online-dot" style={{ height: "8px", width: "8px" }} />
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="truncate text-xs font-semibold" style={{ color: "var(--text-primary)" }}>{authUser?.fullName}</p>
+              <p className="truncate text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
+                {authUser?.fullName}
+              </p>
               <p className="truncate text-xs" style={{ color: "var(--text-muted)" }}>Online</p>
             </div>
           )}
@@ -126,14 +152,21 @@ export default function Sidebar({ children }) {
   return (
     <div className="flex h-screen overflow-hidden mesh-bg">
       {/* Desktop sidebar */}
-      <div className={`hidden lg:block flex-shrink-0 transition-all duration-300 ${collapsed ? "w-16" : "w-60"}`}>
+      <div
+        className={`hidden lg:block flex-shrink-0 transition-all duration-300 ${
+          collapsed ? "w-16" : "w-60"
+        }`}
+      >
         <SidebarContent />
       </div>
 
       {/* Mobile sidebar overlay */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setMobileOpen(false)}
+          />
           <div className="absolute left-0 top-0 h-full w-60 z-10">
             <SidebarContent />
           </div>
@@ -154,20 +187,26 @@ export default function Sidebar({ children }) {
               <rect y="14" width="18" height="2" rx="1" />
             </svg>
           </button>
-          <Link to="/home" className="flex items-center gap-2 transition-opacity hover:opacity-80">
+          <Link
+            to="/home"
+            className="flex items-center gap-2 transition-opacity hover:opacity-80"
+          >
             <img
               src="/TSlogo.png"
               alt="TalkStream logo"
               className="h-7 w-7 flex-shrink-0 rounded-lg object-contain"
             />
-            <span className="font-display font-bold text-sm" style={{ color: "var(--text-primary)" }}>TalkStream</span>
+            <span
+              className="font-display font-bold text-sm"
+              style={{ color: "var(--text-primary)" }}
+            >
+              TalkStream
+            </span>
           </Link>
         </div>
 
         {/* Page content */}
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
+        <main className="flex-1 overflow-auto">{children}</main>
 
         {/* Mobile bottom nav */}
         <div
@@ -178,19 +217,19 @@ export default function Sidebar({ children }) {
             <Link
               key={path}
               to={path}
-              className="flex flex-1 flex-col items-center gap-1 py-3 text-xs transition-colors"
+              className="flex flex-1 flex-col items-center gap-1 py-2.5 text-xs transition-colors"
               style={{ color: isActive(path) ? "oklch(var(--p))" : "var(--text-muted)" }}
             >
-              {createElement(icon, { size: 20 })}
+              {createElement(icon, { size: 19 })}
               <span>{label}</span>
             </Link>
           ))}
           <Link
             to="/profile"
-            className="flex flex-1 flex-col items-center gap-1 py-3 text-xs transition-colors"
+            className="flex flex-1 flex-col items-center gap-1 py-2.5 text-xs transition-colors"
             style={{ color: isActive("/profile") ? "oklch(var(--p))" : "var(--text-muted)" }}
           >
-            <Settings size={20} />
+            <Settings size={19} />
             <span>Profile</span>
           </Link>
         </div>

@@ -76,6 +76,11 @@ export async function getStreamToken() {
   return response.data;
 }
 
+export async function deleteConversation(targetUserId) {
+  const response = await axiosInstance.delete(`/chat/conversations/${targetUserId}`);
+  return response.data;
+}
+
 export const sendOtp = async (data) => {
   const res = await axiosInstance.post("/auth/send-otp", data);
   return res.data;
@@ -100,5 +105,25 @@ export const getCallLogs = async () => {
 export const createCallLog = async (callData) => {
   const res = await axiosInstance.post("/calls", callData);
 
+  return res.data;
+};
+
+export const createGroup = async ({ name, memberIds, image }) => {
+  const res = await axiosInstance.post("/groups/create", { name, memberIds, image });
+  return res.data;
+};
+
+export const getMyGroups = async () => {
+  const res = await axiosInstance.get("/groups");
+  return res.data.groups;
+};
+
+export const addMemberToGroup = async ({ channelId, userId }) => {
+  const res = await axiosInstance.post(`/groups/${channelId}/add-member`, { userId });
+  return res.data;
+};
+
+export const leaveGroup = async (channelId) => {
+  const res = await axiosInstance.delete(`/groups/${channelId}/leave`);
   return res.data;
 };

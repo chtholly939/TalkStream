@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import useAuthUser from "../hooks/useAuthUser";
-import { useQuery } from "@tanstack/react-query";
-import { getStreamToken } from "../lib/api";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { deleteConversation, getStreamToken } from "../lib/api";
 import { getDistanceKm } from "../lib/utils";
 import { Channel, Chat, MessageInput, MessageList, Thread, Window } from "stream-chat-react";
 import { StreamChat } from "stream-chat";
-import { Video, MapPin, ArrowLeft, Loader2 } from "lucide-react";
+import { Video, MapPin, ArrowLeft, Loader2, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import CallButton from "../components/CallButton";
 
@@ -23,6 +23,15 @@ const ChatPage = () => {
   const [incomingCall, setIncomingCall] = useState(null);
 
   const { data: tokenData } = useQuery({ queryKey: ["streamToken"], queryFn: getStreamToken, enabled: !!authUser });
+
+  const { mutate: deleteConversationMutation, isPending: deleting } = useMutation({
+    mutationFn: deleteConversation,
+    onSuccess: () => {
+      toast.success("Conversation deleted on your end");
+      navigate("/chats");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to delete conversation"),
+  });
 
   useEffect(() => {
     const initChat = async () => {
@@ -88,6 +97,13 @@ const ChatPage = () => {
     });
     navigate(`/call/${uniqueCallId}?caller=true`);
     toast.success("Video call started!");
+  };
+
+  const handleDeleteConversation = () => {
+    if (deleting) return;
+    if (window.confirm("Delete this conversation? This only removes it on your end.")) {
+      deleteConversationMutation(targetUserId);
+    }
   };
 
   if (loading) {
@@ -166,12 +182,21 @@ const ChatPage = () => {
                 </div>
               </div>
 
-              {/* Video call button */}
-              <button onClick={handleVideoCall}
-                className="btn-brand flex items-center gap-2 text-sm px-4 py-2">
-                <Video size={15} />
-                <span className="hidden sm:inline">Call</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleDeleteConversation}
+                  disabled={deleting}
+                  className="btn-icon h-9 w-9"
+                  title="Delete conversation"
+                >
+                  {deleting ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                </button>
+                <button onClick={handleVideoCall}
+                  className="btn-brand flex items-center gap-2 text-sm px-4 py-2">
+                  <Video size={15} />
+                  <span className="hidden sm:inline">Call</span>
+                </button>
+              </div>
             </div>
 
             {/* Messages */}

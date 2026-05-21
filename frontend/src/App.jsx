@@ -11,6 +11,9 @@ import OnboardingPage from "./pages/OnboardingPage.jsx";
 import ChatsPage from "./pages/ChatsPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import VerifyPage from "./pages/VerifyPage.jsx";
+import GroupsPage from "./pages/GroupsPage.jsx";         // ← NEW
+import GroupChatPage from "./pages/GroupChatPage.jsx";   // ← NEW
+
 import { Toaster } from "react-hot-toast";
 import PageLoader from "./components/PageLoader.jsx";
 import useAuthUser from "./hooks/useAuthUser.js";
@@ -25,32 +28,53 @@ const App = () => {
 
   if (isLoading) return <PageLoader />;
 
+  const authed = (el) =>
+    isAuthenticated && isOnboarded ? el : (
+      <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
+    );
+
   return (
     <div className="min-h-screen w-full" data-theme={theme}>
       <Routes>
-        <Route path="/"
-          element={isAuthenticated ? <Navigate to={isOnboarded ? "/home" : "/onboarding"} /> : <LandingPage />} />
-        <Route path="/home"
-          element={isAuthenticated && isOnboarded ? <HomePage /> : <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />} />
-        <Route path="/signup"
-          element={!isAuthenticated ? <SignUpPage /> : <Navigate to={isOnboarded ? "/home" : "/onboarding"} />} />
-        <Route path="/login"
-          element={!isAuthenticated ? <LoginPage /> : <Navigate to={isOnboarded ? "/home" : "/onboarding"} />} />
+        {/* Landing / root */}
+        <Route
+          path="/"
+          element={
+            isAuthenticated
+              ? <Navigate to={isOnboarded ? "/home" : "/onboarding"} />
+              : <LandingPage />
+          }
+        />
+
+        {/* Auth */}
+        <Route
+          path="/signup"
+          element={!isAuthenticated ? <SignUpPage /> : <Navigate to={isOnboarded ? "/home" : "/onboarding"} />}
+        />
+        <Route
+          path="/login"
+          element={!isAuthenticated ? <LoginPage /> : <Navigate to={isOnboarded ? "/home" : "/onboarding"} />}
+        />
         <Route path="/verify" element={<VerifyPage />} />
-        <Route path="/friends"
-          element={isAuthenticated && isOnboarded ? <NotificationsPage /> : <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />} />
-        <Route path="/calls"
-          element={isAuthenticated && isOnboarded ? <CallsPage /> : <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />} />
-        <Route path="/call/:id"
-          element={isAuthenticated && isOnboarded ? <CallPage /> : <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />} />
-        <Route path="/chat/:id"
-          element={isAuthenticated && isOnboarded ? <ChatPage /> : <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />} />
-        <Route path="/chats"
-          element={isAuthenticated && isOnboarded ? <ChatsPage /> : <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />} />
-        <Route path="/profile"
-          element={isAuthenticated && isOnboarded ? <ProfilePage /> : <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />} />
-        <Route path="/onboarding"
-          element={isAuthenticated ? (!isOnboarded ? <OnboardingPage /> : <Navigate to="/home" />) : <Navigate to="/login" />} />
+        <Route
+          path="/onboarding"
+          element={
+            isAuthenticated
+              ? !isOnboarded ? <OnboardingPage /> : <Navigate to="/home" />
+              : <Navigate to="/login" />
+          }
+        />
+
+        {/* Main app */}
+        <Route path="/home"               element={authed(<HomePage />)} />
+        <Route path="/chats"              element={authed(<ChatsPage />)} />
+        <Route path="/chat/:id"           element={authed(<ChatPage />)} />
+        <Route path="/friends"            element={authed(<NotificationsPage />)} />
+        <Route path="/calls"              element={authed(<CallsPage />)} />
+        <Route path="/call/:id"           element={authed(<CallPage />)} />
+        <Route path="/profile"            element={authed(<ProfilePage />)} />
+        <Route path="/groups"             element={authed(<GroupsPage />)} />         {/* ← NEW */}
+        <Route path="/groups/:channelId"  element={authed(<GroupChatPage />)} />      {/* ← NEW */}
       </Routes>
 
       <Toaster
@@ -71,4 +95,5 @@ const App = () => {
     </div>
   );
 };
+
 export default App;

@@ -1,14 +1,45 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { StreamChat } from "stream-chat";
-import { getStreamToken, getUserFriends } from "../lib/api";
+import { deleteConversation, getStreamToken } from "../lib/api";
 import useAuthUser from "../hooks/useAuthUser";
-import { MessageSquare, Loader2, Users } from "lucide-react";
+import { MessageSquare, Loader2, Trash2 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Avatar from "../components/Avatar";
+import toast from "react-hot-toast";
 
 const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
+
+const getDirectChatPeer = (channel, currentUserId) => {
+  if (channel.data?.isGroup) return null;
+
+  const members = Object.values(channel.state.members || {});
+  if (members.length !== 2) return null;
+
+  return members.find((member) => member.user?.id !== currentUserId) || null;
+};
+
+const getLastMessageDate = (channel) => {
+  const lastMessage = channel.state.messages?.at(-1);
+  return new Date(lastMessage?.created_at || channel.data?.last_message_at || channel.data?.created_at || 0).getTime();
+};
+
+const getUniqueDirectChats = (channels, currentUserId) => {
+  const chatsByPeer = new Map();
+
+  channels.forEach((channel) => {
+    const peer = getDirectChatPeer(channel, currentUserId);
+    if (!peer?.user?.id) return;
+
+    const existing = chatsByPeer.get(peer.user.id);
+    if (!existing || getLastMessageDate(channel) > getLastMessageDate(existing)) {
+      chatsByPeer.set(peer.user.id, channel);
+    }
+  });
+
+  return Array.from(chatsByPeer.values()).sort((a, b) => getLastMessageDate(b) - getLastMessageDate(a));
+};
 
 const ChatsPage = () => {
   const { authUser } = useAuthUser();
@@ -17,7 +48,25 @@ const ChatsPage = () => {
   const [loading, setLoading] = useState(true);
 
   const { data: tokenData } = useQuery({ queryKey: ["streamToken"], queryFn: getStreamToken, enabled: !!authUser });
-  const { data: friends = [] } = useQuery({ queryKey: ["friends"], queryFn: getUserFriends });
+
+  const { mutate: deleteConversationMutation, isPending: deleting } = useMutation({
+    mutationFn: deleteConversation,
+    onSuccess: (_, targetUserId) => {
+      setChannels((prev) =>
+        prev.filter((channel) => getDirectChatPeer(channel, authUser._id)?.user?.id !== targetUserId)
+      );
+      toast.success("Conversation deleted on your end");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to delete conversation"),
+  });
+
+  const handleDeleteConversation = (event, targetUserId, name) => {
+    event.stopPropagation();
+    if (deleting) return;
+    if (window.confirm(`Delete conversation with ${name}? This only removes it on your end.`)) {
+      deleteConversationMutation(targetUserId);
+    }
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -28,11 +77,11 @@ const ChatsPage = () => {
           await client.connectUser({ id: authUser._id, name: authUser.fullName, image: authUser.profilePic }, tokenData.token);
         }
         const ch = await client.queryChannels(
-          { type: "messaging", members: { $in: [authUser._id] } },
+          { type: "messaging", members: { $in: [authUser._id] }, isGroup: { $ne: true } },
           { last_message_at: -1 },
           { watch: true, state: true }
         );
-        setChannels(ch);
+        setChannels(getUniqueDirectChats(ch, authUser._id));
       } catch (err) {
         console.error("ChatPage stream error:", err);
       } finally {
@@ -67,8 +116,7 @@ const ChatsPage = () => {
         ) : (
           <div className="space-y-1">
             {channels.map((channel) => {
-              const members = Object.values(channel.state.members || {});
-              const otherMember = members.find(m => m.user?.id !== authUser._id);
+              const otherMember = getDirectChatPeer(channel, authUser._id);
               const otherUser = otherMember?.user;
               if (!otherUser) return null;
 
@@ -77,10 +125,17 @@ const ChatsPage = () => {
               const isOnline = otherMember?.user?.online;
 
               return (
-                <button
+                <div
                   key={channel.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => navigate(`/chat/${otherUser.id}`)}
-                  className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-150"
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      navigate(`/chat/${otherUser.id}`);
+                    }
+                  }}
+                  className="group w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-150"
                   style={{ background: "transparent" }}
                   onMouseEnter={e => e.currentTarget.style.background = "oklch(var(--b3))"}
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}
@@ -106,7 +161,16 @@ const ChatsPage = () => {
                       {lastMsg?.text || "No messages yet"}
                     </p>
                   </div>
-                </button>
+                  <button
+                    type="button"
+                    title="Delete conversation"
+                    onClick={(event) => handleDeleteConversation(event, otherUser.id, otherUser.name)}
+                    className="btn-icon h-8 w-8 flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
               );
             })}
           </div>
