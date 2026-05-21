@@ -11,36 +11,6 @@ import toast from "react-hot-toast";
 
 const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
 
-const getDirectChatPeer = (channel, currentUserId) => {
-  if (channel.data?.isGroup) return null;
-
-  const members = Object.values(channel.state.members || {});
-  if (members.length !== 2) return null;
-
-  return members.find((member) => member.user?.id !== currentUserId) || null;
-};
-
-const getLastMessageDate = (channel) => {
-  const lastMessage = channel.state.messages?.at(-1);
-  return new Date(lastMessage?.created_at || channel.data?.last_message_at || channel.data?.created_at || 0).getTime();
-};
-
-const getUniqueDirectChats = (channels, currentUserId) => {
-  const chatsByPeer = new Map();
-
-  channels.forEach((channel) => {
-    const peer = getDirectChatPeer(channel, currentUserId);
-    if (!peer?.user?.id) return;
-
-    const existing = chatsByPeer.get(peer.user.id);
-    if (!existing || getLastMessageDate(channel) > getLastMessageDate(existing)) {
-      chatsByPeer.set(peer.user.id, channel);
-    }
-  });
-
-  return Array.from(chatsByPeer.values()).sort((a, b) => getLastMessageDate(b) - getLastMessageDate(a));
-};
-
 const ChatsPage = () => {
   const { authUser } = useAuthUser();
   const navigate = useNavigate();
@@ -52,9 +22,8 @@ const ChatsPage = () => {
   const { mutate: deleteConversationMutation, isPending: deleting } = useMutation({
     mutationFn: deleteConversation,
     onSuccess: (_, targetUserId) => {
-      setChannels((prev) =>
-        prev.filter((channel) => getDirectChatPeer(channel, authUser._id)?.user?.id !== targetUserId)
-      );
+      const channelId = [authUser._id, targetUserId].sort().join("-");
+      setChannels((prev) => prev.filter((channel) => channel.id !== channelId));
       toast.success("Conversation deleted on your end");
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to delete conversation"),
@@ -77,11 +46,11 @@ const ChatsPage = () => {
           await client.connectUser({ id: authUser._id, name: authUser.fullName, image: authUser.profilePic }, tokenData.token);
         }
         const ch = await client.queryChannels(
-          { type: "messaging", members: { $in: [authUser._id] }, isGroup: { $ne: true } },
+          { type: "messaging", members: { $in: [authUser._id] } },
           { last_message_at: -1 },
           { watch: true, state: true }
         );
-        setChannels(getUniqueDirectChats(ch, authUser._id));
+        setChannels(ch);
       } catch (err) {
         console.error("ChatPage stream error:", err);
       } finally {
@@ -116,7 +85,8 @@ const ChatsPage = () => {
         ) : (
           <div className="space-y-1">
             {channels.map((channel) => {
-              const otherMember = getDirectChatPeer(channel, authUser._id);
+              const members = Object.values(channel.state.members || {});
+              const otherMember = members.find(m => m.user?.id !== authUser._id);
               const otherUser = otherMember?.user;
               if (!otherUser) return null;
 
