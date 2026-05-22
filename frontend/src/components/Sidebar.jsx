@@ -62,7 +62,7 @@ export default function Sidebar({ children }) {
         )}
       </Link>
 
-      <div className="divider mx-4" />
+      <div className="divider mb-3" />
 
       {/* Nav */}
       <nav className="flex-1 space-y-1 px-3 py-4">
