@@ -11,8 +11,9 @@ import OnboardingPage from "./pages/OnboardingPage.jsx";
 import ChatsPage from "./pages/ChatsPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import VerifyPage from "./pages/VerifyPage.jsx";
-import GroupsPage from "./pages/GroupsPage.jsx";         // ← NEW
-import GroupChatPage from "./pages/GroupChatPage.jsx";   // ← NEW
+import GroupsPage from "./pages/GroupsPage.jsx";
+import GroupChatPage from "./pages/GroupChatPage.jsx";
+import LiveMapPage from "./pages/LiveMapPage.jsx";        // NEW
 
 import { Toaster } from "react-hot-toast";
 import PageLoader from "./components/PageLoader.jsx";
@@ -73,8 +74,9 @@ const App = () => {
         <Route path="/calls"              element={authed(<CallsPage />)} />
         <Route path="/call/:id"           element={authed(<CallPage />)} />
         <Route path="/profile"            element={authed(<ProfilePage />)} />
-        <Route path="/groups"             element={authed(<GroupsPage />)} />         {/* ← NEW */}
-        <Route path="/groups/:channelId"  element={authed(<GroupChatPage />)} />      {/* ← NEW */}
+        <Route path="/groups"             element={authed(<GroupsPage />)} />
+        <Route path="/groups/:channelId"  element={authed(<GroupChatPage />)} />
+        <Route path="/map"                element={authed(<LiveMapPage />)} />  {/* NEW */}
       </Routes>
 
       <Toaster

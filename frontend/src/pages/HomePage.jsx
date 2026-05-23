@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Users, MessageSquare, Video, Search, UserPlus, Loader2, Globe, CheckCircle, MapPin } from "lucide-react";
+import { Users, MessageSquare, Video, Search, UserPlus, Loader2, Globe, CheckCircle, MapPin, Map } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Avatar from "../components/Avatar";
 import useAuthUser from "../hooks/useAuthUser";
@@ -65,15 +65,20 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* Stats cards */}
-        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
+        {/* Stats cards — 2x2 grid on mobile, 4 cols on sm+ */}
+        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
-            { label: "Friends", value: friends.length, icon: Users, color: "oklch(var(--p))" },
-            { label: "Explore", value: filteredUsers.length, icon: Globe, color: "#00e676" },
-            { label: "Messages", value: "→", icon: MessageSquare, color: "#9b59ff", action: () => navigate("/chats") },
+            { label: "Friends",   value: friends.length,       icon: Users,        color: "oklch(var(--p))",  action: undefined },
+            { label: "Explore",   value: filteredUsers.length, icon: Globe,        color: "#00e676",          action: undefined },
+            { label: "Messages",  value: "→",                  icon: MessageSquare,color: "#9b59ff",          action: () => navigate("/chats") },
+            { label: "View Map",  value: "→",                  icon: Map,          color: "#00bcd4",          action: () => navigate("/map") },
           ].map(({ label, value, icon: Icon, color, action }) => (
-            <button key={label} onClick={action} className="glass-hover rounded-2xl p-5 text-left transition-all duration-200"
-              style={{ cursor: action ? "pointer" : "default" }}>
+            <button
+              key={label}
+              onClick={action}
+              className="glass-hover rounded-2xl p-5 text-left transition-all duration-200"
+              style={{ cursor: action ? "pointer" : "default" }}
+            >
               <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: `${color}18` }}>
                 <Icon size={18} style={{ color }} />
               </div>
@@ -92,7 +97,9 @@ const HomePage = () => {
           </div>
 
           {loadingFriends ? (
-            <div className="flex justify-center py-8"><Loader2 size={24} className="animate-spin" style={{ color: "var(--text-muted)" }} /></div>
+            <div className="flex justify-center py-8">
+              <Loader2 size={24} className="animate-spin" style={{ color: "var(--text-muted)" }} />
+            </div>
           ) : filteredFriends.length === 0 ? (
             <div className="glass rounded-2xl p-8 text-center">
               <Users size={32} className="mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
@@ -131,7 +138,9 @@ const HomePage = () => {
           </div>
 
           {loadingUsers ? (
-            <div className="flex justify-center py-10"><Loader2 size={24} className="animate-spin" style={{ color: "var(--text-muted)" }} /></div>
+            <div className="flex justify-center py-10">
+              <Loader2 size={24} className="animate-spin" style={{ color: "var(--text-muted)" }} />
+            </div>
           ) : filteredUsers.length === 0 ? (
             <div className="glass rounded-2xl p-8 text-center">
               <h3 className="font-semibold text-sm" style={{ color: "var(--text-secondary)" }}>No new users to show right now</h3>
@@ -161,7 +170,9 @@ const HomePage = () => {
                       disabled={hasRequestBeenSent || isPending}
                       style={hasRequestBeenSent ? { opacity: 0.6, pointerEvents: "none" } : {}}
                     >
-                      {hasRequestBeenSent ? <><CheckCircle size={15} />Request Sent</> : <><UserPlus size={15} />Send Friend Request</>}
+                      {hasRequestBeenSent
+                        ? <><CheckCircle size={15} />Request Sent</>
+                        : <><UserPlus size={15} />Send Friend Request</>}
                     </button>
                   </div>
                 );

@@ -9,6 +9,7 @@ export const login = async (loginData) => {
   const response = await axiosInstance.post("/auth/login", loginData);
   return response.data;
 };
+
 export const logout = async () => {
   const response = await axiosInstance.post("/auth/logout");
   return response.data;
@@ -98,13 +99,11 @@ export const updateProfile = async (data) => {
 
 export const getCallLogs = async () => {
   const res = await axiosInstance.get("/calls");
-
   return res.data;
 };
 
 export const createCallLog = async (callData) => {
   const res = await axiosInstance.post("/calls", callData);
-
   return res.data;
 };
 
@@ -125,5 +124,11 @@ export const addMemberToGroup = async ({ channelId, userId }) => {
 
 export const leaveGroup = async (channelId) => {
   const res = await axiosInstance.delete(`/groups/${channelId}/leave`);
+  return res.data;
+};
+
+// live map: fetch friends with coordinates
+export const getFriendsLocations = async () => {
+  const res = await axiosInstance.get("/users/friends/locations");
   return res.data;
 };

@@ -2,18 +2,25 @@ import { createElement, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home, MessageSquare, Users, Phone, Settings, LogOut,
-  ChevronLeft, ChevronRight, UsersRound,
+  ChevronLeft, ChevronRight, UsersRound, MapIcon,
 } from "lucide-react";
 import useAuthUser from "../hooks/useAuthUser";
 import useLogout from "../hooks/useLogout";
 import ThemeSelector from "./ThemeSelector";
 
+// Map excluded from mobile bottom nav (too cluttered)
+// Accessible via Home page card + desktop sidebar
 const NAV_ITEMS = [
   { icon: Home,          label: "Home",    path: "/home"    },
   { icon: MessageSquare, label: "Chats",   path: "/chats"   },
   { icon: UsersRound,    label: "Groups",  path: "/groups"  },
   { icon: Users,         label: "Friends", path: "/friends" },
   { icon: Phone,         label: "Calls",   path: "/calls"   },
+];
+
+const DESKTOP_NAV_ITEMS = [
+  ...NAV_ITEMS,
+  { icon: MapIcon, label: "Map", path: "/map" },
 ];
 
 export default function Sidebar({ children }) {
@@ -41,39 +48,27 @@ export default function Sidebar({ children }) {
       className="flex h-full flex-col"
       style={{ background: "oklch(var(--b2))", borderRight: "1px solid var(--border)" }}
     >
-      {/* Logo */}
       <Link
         to="/home"
         onClick={() => setMobileOpen(false)}
-        className={`flex items-center gap-3 px-4 py-5 transition-opacity hover:opacity-80 ${
-          collapsed ? "justify-center" : ""
-        }`}
+        className={`flex items-center gap-3 px-4 py-5 transition-opacity hover:opacity-80 ${collapsed ? "justify-center" : ""}`}
         title={collapsed ? "TalkStream" : ""}
       >
-        <img
-          src="/TSlogo.png"
-          alt="TalkStream logo"
-          className="h-9 w-9 flex-shrink-0 rounded-xl object-contain"
-        />
+        <img src="/TSlogo.png" alt="TalkStream logo" className="h-9 w-9 flex-shrink-0 rounded-xl object-contain" />
         {!collapsed && (
-          <span className="font-display font-bold text-lg" style={{ color: "var(--text-primary)" }}>
-            TalkStream
-          </span>
+          <span className="font-display font-bold text-lg" style={{ color: "var(--text-primary)" }}>TalkStream</span>
         )}
       </Link>
 
       <div className="divider mb-3" />
 
-      {/* Nav */}
       <nav className="flex-1 space-y-1 px-3 py-4">
-        {NAV_ITEMS.map(({ icon, label, path }) => (
+        {DESKTOP_NAV_ITEMS.map(({ icon, label, path }) => (
           <Link
             key={path}
             to={path}
             onClick={() => setMobileOpen(false)}
-            className={`sidebar-item ${isActive(path) ? "active" : ""} ${
-              collapsed ? "justify-center" : ""
-            }`}
+            className={`sidebar-item ${isActive(path) ? "active" : ""} ${collapsed ? "justify-center" : ""}`}
             title={collapsed ? label : ""}
           >
             {createElement(icon, { size: 18 })}
@@ -82,31 +77,21 @@ export default function Sidebar({ children }) {
         ))}
       </nav>
 
-      {/* Bottom section */}
       <div className="px-3 pb-4 space-y-2">
         <div className="divider mb-3" />
 
-        {/* Profile */}
         <Link
           to="/profile"
           onClick={() => setMobileOpen(false)}
-          className={`sidebar-item ${isActive("/profile") ? "active" : ""} ${
-            collapsed ? "justify-center" : ""
-          }`}
+          className={`sidebar-item ${isActive("/profile") ? "active" : ""} ${collapsed ? "justify-center" : ""}`}
           title={collapsed ? "Profile" : ""}
         >
           <div className="relative flex-shrink-0">
-            <div
-              className="h-7 w-7 rounded-full overflow-hidden"
-              style={{ background: "oklch(var(--b3))" }}
-            >
+            <div className="h-7 w-7 rounded-full overflow-hidden" style={{ background: "oklch(var(--b3))" }}>
               {authUser?.profilePic ? (
                 <img src={authUser.profilePic} alt="" className="h-full w-full object-cover" />
               ) : (
-                <span
-                  className="flex h-full w-full items-center justify-center text-xs font-bold"
-                  style={{ color: "var(--text-secondary)" }}
-                >
+                <span className="flex h-full w-full items-center justify-center text-xs font-bold" style={{ color: "var(--text-secondary)" }}>
                   {authUser?.fullName?.[0]?.toUpperCase()}
                 </span>
               )}
@@ -115,18 +100,14 @@ export default function Sidebar({ children }) {
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="truncate text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
-                {authUser?.fullName}
-              </p>
+              <p className="truncate text-xs font-semibold" style={{ color: "var(--text-primary)" }}>{authUser?.fullName}</p>
               <p className="truncate text-xs" style={{ color: "var(--text-muted)" }}>Online</p>
             </div>
           )}
         </Link>
 
-        {/* Theme */}
         <ThemeSelector collapsed={collapsed} />
 
-        {/* Logout */}
         <button
           onClick={handleLogout}
           className={`sidebar-item w-full text-left ${collapsed ? "justify-center" : ""}`}
@@ -138,7 +119,6 @@ export default function Sidebar({ children }) {
         </button>
       </div>
 
-      {/* Collapse toggle — desktop only */}
       <button
         onClick={() => setCollapsed(!collapsed)}
         className="hidden lg:flex items-center justify-center py-3 transition-opacity hover:opacity-60"
@@ -152,33 +132,25 @@ export default function Sidebar({ children }) {
   return (
     <div className="flex h-screen overflow-hidden mesh-bg">
       {/* Desktop sidebar */}
-      <div
-        className={`hidden lg:block flex-shrink-0 transition-all duration-300 ${
-          collapsed ? "w-16" : "w-60"
-        }`}
-      >
+      <div className={`hidden lg:block flex-shrink-0 transition-all duration-300 ${collapsed ? "w-16" : "w-60"}`}>
         <SidebarContent />
       </div>
 
-      {/* Mobile sidebar overlay */}
+      {/* Mobile drawer — z-[1001] beats Leaflet's internal z-index (400-1000) */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div
-            className="absolute inset-0 bg-black/60"
-            onClick={() => setMobileOpen(false)}
-          />
-          <div className="absolute left-0 top-0 h-full w-60 z-10">
+        <div className="fixed inset-0 lg:hidden" style={{ zIndex: 1001 }}>
+          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
+          <div className="absolute left-0 top-0 h-full w-60" style={{ zIndex: 1002 }}>
             <SidebarContent />
           </div>
         </div>
       )}
 
-      {/* Main content area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Mobile top bar */}
         <div
           className="flex items-center gap-3 px-4 py-3 lg:hidden"
-          style={{ background: "oklch(var(--b2))", borderBottom: "1px solid var(--border)" }}
+          style={{ background: "oklch(var(--b2))", borderBottom: "1px solid var(--border)", position: "relative", zIndex: 10 }}
         >
           <button onClick={() => setMobileOpen(true)} className="btn-icon h-9 w-9">
             <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
@@ -187,31 +159,18 @@ export default function Sidebar({ children }) {
               <rect y="14" width="18" height="2" rx="1" />
             </svg>
           </button>
-          <Link
-            to="/home"
-            className="flex items-center gap-2 transition-opacity hover:opacity-80"
-          >
-            <img
-              src="/TSlogo.png"
-              alt="TalkStream logo"
-              className="h-7 w-7 flex-shrink-0 rounded-lg object-contain"
-            />
-            <span
-              className="font-display font-bold text-sm"
-              style={{ color: "var(--text-primary)" }}
-            >
-              TalkStream
-            </span>
+          <Link to="/home" className="flex items-center gap-2 transition-opacity hover:opacity-80">
+            <img src="/TSlogo.png" alt="TalkStream logo" className="h-7 w-7 flex-shrink-0 rounded-lg object-contain" />
+            <span className="font-display font-bold text-sm" style={{ color: "var(--text-primary)" }}>TalkStream</span>
           </Link>
         </div>
 
-        {/* Page content */}
         <main className="flex-1 overflow-auto">{children}</main>
 
-        {/* Mobile bottom nav */}
+        {/* Mobile bottom nav — 5 items + Profile, no Map */}
         <div
           className="flex lg:hidden"
-          style={{ background: "oklch(var(--b2))", borderTop: "1px solid var(--border)" }}
+          style={{ background: "oklch(var(--b2))", borderTop: "1px solid var(--border)", position: "relative", zIndex: 10 }}
         >
           {NAV_ITEMS.map(({ icon, label, path }) => (
             <Link

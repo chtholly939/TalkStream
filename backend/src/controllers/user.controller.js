@@ -8,8 +8,8 @@ export async function getRecommendedUsers(req, res) {
 
     const recommendedUsers = await User.find({
       $and: [
-        { _id: { $ne: currentUserId } }, //exclude current user
-        { _id: { $nin: currentUser.friends } }, // exclude current user's friends
+        { _id: { $ne: currentUserId } },
+        { _id: { $nin: currentUser.friends } },
         { isOnboarded: true },
       ],
     });
@@ -49,12 +49,38 @@ export async function getMyFriends(req, res) {
   }
 }
 
+// NEW: returns friends with their lat/lon for the live map
+export async function getFriendsLocations(req, res) {
+  try {
+    const user = await User.findById(req.user.id)
+      .select("friends lat lon location fullName profilePic")
+      .populate("friends", "fullName profilePic location lat lon");
+
+    // Include current user so they appear on their own map too
+    const result = {
+      me: {
+        _id: user._id,
+        fullName: user.fullName,
+        profilePic: user.profilePic,
+        location: user.location,
+        lat: user.lat,
+        lon: user.lon,
+      },
+      friends: user.friends.filter((f) => f.lat && f.lon), // only friends with coords
+    };
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error in getFriendsLocations controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
 export async function sendFriendRequest(req, res) {
   try {
     const myId = req.user.id;
     const { id: recipientId } = req.params;
 
-    // prevent sending req to yourself
     if (myId === recipientId) {
       return res.status(400).json({ message: "You can't send friend request to yourself" });
     }
@@ -64,12 +90,10 @@ export async function sendFriendRequest(req, res) {
       return res.status(404).json({ message: "Recipient not found" });
     }
 
-    // check if user is already friends
     if (recipient.friends.includes(myId)) {
       return res.status(400).json({ message: "You are already friends with this user" });
     }
 
-    // check if a req already exists
     const existingRequest = await FriendRequest.findOne({
       $or: [
         { sender: myId, recipient: recipientId },
@@ -105,7 +129,6 @@ export async function acceptFriendRequest(req, res) {
       return res.status(404).json({ message: "Friend request not found" });
     }
 
-    // Verify the current user is the recipient
     if (friendRequest.recipient.toString() !== req.user.id) {
       return res.status(403).json({ message: "You are not authorized to accept this request" });
     }
@@ -113,8 +136,6 @@ export async function acceptFriendRequest(req, res) {
     friendRequest.status = "accepted";
     await friendRequest.save();
 
-    // add each user to the other's friends array
-    // $addToSet: adds elements to an array only if they do not already exist.
     await User.findByIdAndUpdate(friendRequest.sender, {
       $addToSet: { friends: friendRequest.recipient },
     });
@@ -144,13 +165,8 @@ export async function removeFriend(req, res) {
       return res.status(404).json({ message: "Friend not found" });
     }
 
-    await User.findByIdAndUpdate(myId, {
-      $pull: { friends: friendId },
-    });
-
-    await User.findByIdAndUpdate(friendId, {
-      $pull: { friends: myId },
-    });
+    await User.findByIdAndUpdate(myId, { $pull: { friends: friendId } });
+    await User.findByIdAndUpdate(friendId, { $pull: { friends: myId } });
 
     await FriendRequest.deleteMany({
       $or: [
@@ -202,16 +218,11 @@ export async function getOutgoingFriendReqs(req, res) {
 export async function updateProfile(req, res) {
   try {
     const userId = req.user.id;
-
     const { location } = req.body;
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      {
-        $set: {
-          location: location || "",
-        },
-      },
+      { $set: { location: location || "" } },
       { new: true }
     );
 

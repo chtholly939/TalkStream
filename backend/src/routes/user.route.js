@@ -10,6 +10,7 @@ import {
   getFriendRequests,
   removeFriend,
   sendFriendRequest,
+  getFriendsLocations,       // NEW
 } from "../controllers/user.controller.js";
 
 const router = express.Router();
@@ -17,8 +18,9 @@ const router = express.Router();
 // apply auth middleware to all routes
 router.use(protectRoute);
 
-router.get("/all", protectRoute, getAllUsers);
+router.get("/all", getAllUsers);
 router.get("/chats", getMyFriends);
+router.get("/friends/locations", getFriendsLocations);   // NEW – live map
 
 router.post("/friend-request/:id", sendFriendRequest);
 router.put("/friend-request/:id/accept", acceptFriendRequest);
@@ -27,6 +29,6 @@ router.delete("/friend/:id", removeFriend);
 router.get("/friend-requests", getFriendRequests);
 router.get("/outgoing-friend-requests", getOutgoingFriendReqs);
 
-router.put("/profile", protectRoute, updateProfile);
+router.put("/profile", updateProfile);
 
 export default router;
