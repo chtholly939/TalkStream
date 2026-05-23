@@ -50,7 +50,27 @@ const ChatsPage = () => {
           { last_message_at: -1 },
           { watch: true, state: true }
         );
-        setChannels(ch);
+        const uniqueChannels = [];
+        const seenUsers = new Set();
+
+        for (const channel of ch) {
+          const members = Object.values(channel.state.members || {});
+          const otherMember = members.find(
+            (m) => m.user?.id !== authUser._id
+          );
+
+          const otherUserId = otherMember?.user?.id;
+
+          if (!otherUserId) continue;
+
+          // skip duplicate users
+          if (seenUsers.has(otherUserId)) continue;
+
+          seenUsers.add(otherUserId);
+          uniqueChannels.push(channel);
+        }
+
+        setChannels(uniqueChannels);
       } catch (err) {
         console.error("ChatPage stream error:", err);
       } finally {
