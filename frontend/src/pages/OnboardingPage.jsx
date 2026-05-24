@@ -4,6 +4,7 @@ import { Loader2, ChevronRight, Camera, MapPin } from "lucide-react";
 import useAuthUser from "../hooks/useAuthUser";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { completeOnboarding } from "../lib/api";
+import { compressImage } from "../lib/imageUtils";
 import toast from "react-hot-toast";
 
 const AVATARS = [
@@ -42,12 +43,18 @@ const OnboardingPage = () => {
     onError: (err) => toast.error(err.response?.data?.message || "Failed to save profile"),
   });
 
-  const handleImageUpload = (e) => {
+  // ✅ Fixed: compress before converting to base64
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => setForm({ ...form, profilePic: reader.result });
-    reader.readAsDataURL(file);
+    try {
+      toast.loading("Processing image...", { id: "img" });
+      const compressed = await compressImage(file);
+      setForm((f) => ({ ...f, profilePic: compressed }));
+      toast.success("Photo ready!", { id: "img" });
+    } catch {
+      toast.error("Failed to process image", { id: "img" });
+    }
   };
 
   const detectLocation = () => {
@@ -62,7 +69,7 @@ const OnboardingPage = () => {
           const area = addr.suburb || addr.neighbourhood || addr.village || addr.hamlet;
           const city = addr.city || addr.town || addr.state || addr.county;
           const loc = area ? `${area}, ${city}` : city || "Unknown";
-          setForm(f => ({ ...f, location: loc, lat: latitude, lon: longitude }));
+          setForm((f) => ({ ...f, location: loc, lat: latitude, lon: longitude }));
           toast.success("Location detected!", { id: "loc" });
         } catch { toast.error("Couldn't fetch location name", { id: "loc" }); }
       },
@@ -98,7 +105,7 @@ const OnboardingPage = () => {
               <h2 className="mb-1 font-display font-bold text-xl" style={{ color: "var(--text-primary)" }}>Choose your avatar</h2>
               <p className="mb-6 text-sm" style={{ color: "var(--text-secondary)" }}>Pick a preset or upload your own photo</p>
 
-              {/* Current preview */}
+              {/* Preview + upload button */}
               <div className="flex justify-center mb-5">
                 <div className="relative">
                   <img src={form.profilePic} alt="preview"
@@ -107,12 +114,13 @@ const OnboardingPage = () => {
                   <label className="absolute -bottom-1 -right-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-2"
                     style={{ background: "oklch(var(--p))", borderColor: "oklch(var(--b2))" }}>
                     <Camera size={13} className="text-white" />
+                    {/* accept="image/*" without capture so user can choose gallery or camera */}
                     <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                   </label>
                 </div>
               </div>
 
-              {/* Avatar grid */}
+              {/* Avatar presets */}
               <div className="grid grid-cols-4 gap-3 mb-6">
                 {AVATARS.map((url, i) => (
                   <button key={i} onClick={() => setForm({ ...form, profilePic: url })}
@@ -159,7 +167,7 @@ const OnboardingPage = () => {
             </div>
           )}
 
-          {/* Actions */}
+          {/* Nav */}
           <div className="mt-8 flex gap-3">
             {step > 1 && (
               <button onClick={() => setStep(step - 1)} className="btn-secondary flex-1">Back</button>
