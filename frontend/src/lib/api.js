@@ -122,6 +122,11 @@ export const addMemberToGroup = async ({ channelId, userId }) => {
   return res.data;
 };
 
+export const updateGroupImage = async ({ channelId, image }) => {
+  const res = await axiosInstance.patch(`/groups/${channelId}/image`, { image });
+  return res.data;
+};
+
 export const leaveGroup = async (channelId) => {
   const res = await axiosInstance.delete(`/groups/${channelId}/leave`);
   return res.data;

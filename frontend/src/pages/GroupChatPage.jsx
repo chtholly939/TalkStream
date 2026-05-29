@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -6,12 +6,13 @@ import {
 } from "stream-chat-react";
 import { StreamChat } from "stream-chat";
 import {
-  ArrowLeft, Users, UserPlus, LogOut, Search, Check, Loader2, X,
+  ArrowLeft, Users, UserPlus, LogOut, Search, Check, Loader2, X, Camera,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { getStreamToken, getUserFriends, addMemberToGroup, leaveGroup } from "../lib/api";
+import { getStreamToken, getUserFriends, addMemberToGroup, updateGroupImage, leaveGroup } from "../lib/api";
 import useAuthUser from "../hooks/useAuthUser";
 import Avatar from "../components/Avatar";
+import { compressImage } from "../lib/imageUtils";
 
 const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
 
@@ -101,9 +102,11 @@ const GroupChatPage = () => {
   const navigate = useNavigate();
   const { authUser } = useAuthUser();
   const queryClient = useQueryClient();
+  const imageInputRef = useRef(null);
 
   const [chatClient, setChatClient] = useState(null);
   const [channel, setChannel] = useState(null);
+  const [currentGroupImage, setCurrentGroupImage] = useState("");
   const [loading, setLoading] = useState(true);
   const [showAddMember, setShowAddMember] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
@@ -124,6 +127,32 @@ const GroupChatPage = () => {
     onError: () => toast.error("Failed to leave group"),
   });
 
+  const { mutate: saveGroupImage, isPending: updatingImage } = useMutation({
+    mutationFn: (image) => updateGroupImage({ channelId, image }),
+    onMutate: () => toast.loading("Updating group photo...", { id: "group-img" }),
+    onSuccess: async (data) => {
+      setCurrentGroupImage(data.image);
+      await channel?.watch();
+      queryClient.invalidateQueries({ queryKey: ["myGroups"] });
+      toast.success("Group photo updated", { id: "group-img" });
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to update group photo", { id: "group-img" }),
+  });
+
+  const handleGroupImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    try {
+      toast.loading("Processing image...", { id: "group-img" });
+      const compressed = await compressImage(file);
+      saveGroupImage(compressed);
+    } catch {
+      toast.error("Failed to process image", { id: "group-img" });
+    }
+  };
+
   useEffect(() => {
     const initChat = async () => {
       if (!tokenData?.token || !authUser) return;
@@ -139,6 +168,7 @@ const GroupChatPage = () => {
         await ch.watch();
         setChatClient(client);
         setChannel(ch);
+        setCurrentGroupImage(ch.data?.image || "");
       } catch (err) {
         console.error("GroupChatPage error:", err);
         toast.error("Failed to connect to group chat");
@@ -173,7 +203,7 @@ const GroupChatPage = () => {
   }
 
   const groupName = channel.data?.name || "Group";
-  const groupImage = channel.data?.image;
+  const groupImage = currentGroupImage || channel.data?.image;
   const members = Object.values(channel.state.members || {});
   const existingMemberIds = members.map((m) => m.user?.id);
 
@@ -193,30 +223,54 @@ const GroupChatPage = () => {
                 </button>
 
                 {/* Group avatar */}
-                <div
-                  className="h-10 w-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
-                  style={{ background: "oklch(var(--p) / 0.15)" }}
-                >
-                  {groupImage ? (
-                    <img src={groupImage} alt={groupName} className="h-full w-full object-cover" />
-                  ) : (
-                    <Users size={18} style={{ color: "oklch(var(--p))" }} />
-                  )}
+                <div className="relative flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => imageInputRef.current?.click()}
+                    className="h-10 w-10 rounded-full overflow-hidden flex items-center justify-center"
+                    style={{ background: "oklch(var(--p) / 0.15)" }}
+                    title="Change group photo"
+                    disabled={updatingImage}
+                  >
+                    {groupImage ? (
+                      <img src={groupImage} alt={groupName} className="h-full w-full object-cover" />
+                    ) : (
+                      <Users size={18} style={{ color: "oklch(var(--p))" }} />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => imageInputRef.current?.click()}
+                    className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border"
+                    style={{ background: "oklch(var(--p))", borderColor: "oklch(var(--b2))", color: "white" }}
+                    title="Change group photo"
+                    disabled={updatingImage}
+                  >
+                    {updatingImage ? <Loader2 size={10} className="animate-spin" /> : <Camera size={10} />}
+                  </button>
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleGroupImageUpload}
+                  />
                 </div>
 
                 {/* Name + member count */}
-                <div>
+                <button
+                  type="button"
+                  onClick={() => { setShowMembers(!showMembers); setShowAddMember(false); }}
+                  className="min-w-0 text-left"
+                  title="View group members"
+                >
                   <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>
                     {groupName}
                   </p>
-                  <button
-                    onClick={() => setShowMembers(!showMembers)}
-                    className="text-xs hover:underline"
-                    style={{ color: "var(--text-muted)" }}
-                  >
+                  <span className="text-xs hover:underline" style={{ color: "var(--text-muted)" }}>
                     {members.length} member{members.length !== 1 ? "s" : ""}
-                  </button>
-                </div>
+                  </span>
+                </button>
               </div>
 
               {/* Actions */}

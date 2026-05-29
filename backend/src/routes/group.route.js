@@ -4,6 +4,7 @@ import {
   createGroup,
   getMyGroups,
   addMember,
+  updateGroupImage,
   leaveGroup,
 } from "../controllers/group.controller.js";
 
@@ -12,6 +13,7 @@ const router = express.Router();
 router.post("/create", protectRoute, createGroup);
 router.get("/", protectRoute, getMyGroups);
 router.post("/:channelId/add-member", protectRoute, addMember);
+router.patch("/:channelId/image", protectRoute, updateGroupImage);
 router.delete("/:channelId/leave", protectRoute, leaveGroup);
 
 export default router;
