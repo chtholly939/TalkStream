@@ -15,6 +15,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { THEMES, THEME_META, useThemeStore } from "../store/useThemeStore";
+import ThemeSelector from "../components/ThemeSelector";
 
 const highlights = [
   { label: "Fast channels", value: "Realtime" },
@@ -79,94 +80,6 @@ const Feature = ({ icon: Icon, title, description, highlight }) => (
   </article>
 );
 
-const LandingThemePicker = () => {
-  const { theme, setTheme } = useThemeStore();
-  const [open, setOpen] = useState(false);
-  const pickerRef = useRef(null);
-  const currentTheme = THEME_META[theme] || THEME_META.dark;
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (pickerRef.current && !pickerRef.current.contains(event.target)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  return (
-    <div className="relative" ref={pickerRef}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-medium transition-all duration-200 hover:-translate-y-0.5"
-        style={{
-          background: "oklch(var(--b2) / 0.82)",
-          border: "1px solid var(--border)",
-          color: "var(--text-secondary)",
-          boxShadow: open ? "0 16px 34px rgba(0,0,0,0.18)" : "none",
-        }}
-        aria-label="Change theme"
-        aria-expanded={open}
-      >
-        <Palette size={16} />
-        <span className="hidden max-w-24 truncate sm:inline">{currentTheme.label}</span>
-        <ChevronDown
-          size={14}
-          className="hidden transition-transform duration-200 sm:block"
-          style={{ transform: open ? "rotate(180deg)" : "rotate(0)" }}
-        />
-      </button>
-
-      {open && (
-        <div
-          className="absolute right-0 top-full z-50 mt-3 w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-2xl shadow-2xl animate-fade-in"
-          style={{
-            background: "oklch(var(--b2))",
-            border: "1px solid var(--border)",
-            boxShadow: "0 24px 48px rgba(0,0,0,0.34)",
-          }}
-        >
-          <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
-            <Palette size={14} style={{ color: "var(--text-muted)" }} />
-            <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-              Choose theme
-            </span>
-          </div>
-          <div className="max-h-72 overflow-y-auto p-2">
-            {THEMES.map((name) => {
-              const meta = THEME_META[name];
-              const active = theme === name;
-              return (
-                <button
-                  key={name}
-                  type="button"
-                  data-theme={name}
-                  onClick={() => { setTheme(name); setOpen(false); }}
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-all duration-150 hover:bg-base-300"
-                  style={{ background: active ? "oklch(var(--p) / 0.12)" : "transparent" }}
-                >
-                  <span className="flex h-5 w-9 flex-shrink-0 overflow-hidden rounded-lg border border-white/10">
-                    <span className="flex-1" style={{ background: "oklch(var(--p))" }} />
-                    <span className="flex-1" style={{ background: "oklch(var(--s))" }} />
-                    <span className="flex-1" style={{ background: "oklch(var(--a))" }} />
-                    <span className="flex-1" style={{ background: "oklch(var(--n))" }} />
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-xs font-medium" style={{ color: "var(--text-primary)" }}>
-                    {meta.label}
-                  </span>
-                  {active && <Check size={13} style={{ color: "oklch(var(--p))", flexShrink: 0 }} />}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
 export default function LandingPage() {
   return (
     <main className="min-h-screen overflow-hidden mesh-bg" style={{ color: "var(--text-primary)" }}>
@@ -176,7 +89,7 @@ export default function LandingPage() {
           <span className="truncate font-display text-lg">TalkStream</span>
         </Link>
         <div className="flex flex-shrink-0 items-center gap-2 sm:gap-3">
-          <LandingThemePicker />
+          <ThemeSelector variant="navbar" />
           <Link to="/login" className="btn-secondary px-4 py-2">Sign in</Link>
           <Link to="/signup" className="btn-brand hidden px-4 py-2 sm:inline-flex">Create account</Link>
         </div>
@@ -322,7 +235,6 @@ export default function LandingPage() {
             border: "1px solid oklch(var(--p) / 0.2)",
           }}
         >
-          {/* Map pin icon block */}
           <div
             className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl"
             style={{ background: "oklch(var(--p) / 0.15)" }}
@@ -330,7 +242,6 @@ export default function LandingPage() {
             <MapPin size={30} style={{ color: "oklch(var(--p))" }} />
           </div>
 
-          {/* Text */}
           <div className="flex-1 min-w-0">
             <div className="mb-1 flex items-center gap-2">
               <h3 className="font-display text-xl sm:text-2xl" style={{ color: "var(--text-primary)" }}>
